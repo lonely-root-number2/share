@@ -1,6 +1,5 @@
 
 
-
 慢速系统调用/io/定时/pause等
 
  io：阻塞/非阻塞 < == >多路
@@ -11,6 +10,16 @@ future组合和promise all。  加锁控制共享和转移所有权
 
 
 go的sysycall：https://github.com/cch123/golang-notes/blob/master/syscall.md
+==>
+主动让出：RawSyscall未通知runtime进入syscall以及在函数调用插入位点
+抢占式调度：1.14，信号
+阻塞系统调用：Syscall
+非阻塞系统调用：RawSyscall
+
+不被调度的lowlevel syscall  --->runtime使用
+进入非阻塞的不可被抢占
+进入阻塞的系统调用主动让出
+
 # Rust
 runtime将工作分为两部分：
 executor: 执行非阻塞的任务。：tokio、smol、async-std
