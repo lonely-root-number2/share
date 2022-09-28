@@ -1,13 +1,27 @@
-
+协程是什么？
+更轻量级的线程。在用户态进行调度实现更低成本的切换。
+实现协程的核心：
+将阻塞的操作放进用户态的调度器进行管理（意味着什么？从零实现一套标准库将所有相关的syscall等放入管理）
+抢占式的调度如何进行抢占？
 
 慢速系统调用/io/定时/pause等
 
  io：阻塞/非阻塞 < == >多路
+为了实现调度而抽象出来的一些东西：
+    future/channel
+不同语言的语法糖
+    rs：async/await/
+    go：语法糖
+    js：async/await/promise
 
-future/channel async/await/promise/go 语法糖
-rust的exector/go的调度/js的事件循环  调度的问题：出让CPU 
-future组合和promise all。  加锁控制共享和转移所有权
+future组合和promise all。  
+语言的runtime（调度器/执行器）做了哪些工作
+    rust的exector/go的调度/js的事件循环  
+调度的问题：出让CPU 
+    抢占/协作式
 
+数据竞态的解决
+    加锁控制共享和转移所有权
 
 go的sysycall：https://github.com/cch123/golang-notes/blob/master/syscall.md
 ==>
