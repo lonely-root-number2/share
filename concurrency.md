@@ -1,28 +1,33 @@
 ### 协程是什么？
-更轻量级的线程。在用户态进行调度实现更低成本的任务切换（并发）。
+更轻量级的线程。在用户态进行调度实现更低成本的任务切换(并发)。
 ### 实现协程的核心：
-将阻塞的操作放进用户态的调度器进行管理（意味着什么？从零实现一套标准库将所有相关的syscall等放入管理）
-调度：抢占式的如何进行抢占/协作式如何主动出让 
-  
-调度的本质：
-    出让CPU（抢占/协作式）
++ 将阻塞的操作放进用户态的调度器进行管理（意味着什么？从零实现一套标准库将所有相关的syscall等放入管理）
++ 调度：抢占式的如何进行抢占/协作式如何主动出让 
 
-慢速系统调用/io/定时/pause等 
+### 阻塞的操作指的是什么？
+慢速系统调用(阻塞的io/pause)，sleep等(比如go中从channel中读写值) 
+#### 关于几种IO
+io：阻塞/非阻塞 < == >多路IO  
+(read/write/send/recv和fcntl)
 
- io：阻塞/非阻塞 < == >多路  
+### 为了实现调度而抽象出来的一些东西
+future：表示一个(异步)的操作【对外部来说是可让出CPU】 
 
-为了实现调度而抽象出来的一些东西：
-    future/channel 
+channel： 保存异步操作产物的队列
+
+### 任务组合与同步
+future组合/promise.All和then/channel
+
 不同语言的语法糖  
     rs：async/await/
     go：语法糖 
     js：async/await/promise
-任务组合与同步：
-    future组合/promise.All/channel
 
 
 语言的runtime（调度器/执行器）做了哪些工作
-    rust的exector/go的调度/js的事件循环  
+    rust的exector
+    go的调度器
+    js的事件循环  
 
 数据竞态的解决
     加锁控制共享和转移所有权
@@ -70,3 +75,14 @@ job.cancelAndJoin() - 等待协程执行完毕然后再取消  ？ 执行完毕�
 # 趣事
 括号位置的异教徒笑话与unsafexx
 actix开源作者因unsafe xx 退出开源
+
+
+
+
+调度的本质：
+    改变CPU的使用权（抢占/协作式）
+
+
+补充阅读：
+阻塞/非阻塞IO与多路复用：https://www.zhihu.com/question/23614342
+go的sysycall：https://github.com/cch123/golang-notes/blob/master/syscall.md
