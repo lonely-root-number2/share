@@ -1,36 +1,94 @@
 ### 协程是什么？
 更轻量级的线程。在用户态进行调度实现更低成本的任务切换(并发)。
+可以暂停和恢复的函数。（类似于线程池的任务，但又可以暂停恢复，不必等待结束）
+### 有啥用？
+优雅的完成一个异步逻辑 
++ 多线程：性能略差
++ 异步回调：丑/回调地狱
++ 协程：平衡了两者的优缺点。线程切换花费的时间成本通常为协程切换的10倍以上。
+### 划分
++ 
+    + 对称：协程启动了就和启动它的协程无关了，每个都是平等的。 
+    + 非对称：返回到调用它的协程。类似于yield
++ 
+    + 有栈：类似于线程栈，可从任意地方返回。使用方便
+    + 无栈：无线程栈，本质上是个状态机，不能从任意地方返回。性能比有栈协程优秀
 ### 实现协程的核心：
-+ 将阻塞的操作放进用户态的调度器进行管理（意味着什么？从零实现一套标准库将所有相关的syscall等放入管理）
-+ 调度：抢占式的如何进行抢占/协作式如何主动出让 
++ 上下文切换
++ 将阻塞的操作放进用户态的调度器进行管理（意味着什么？从零实现一套标准库将所有相关的syscall等放入管理）【无栈协程主动出让可看作用户自身在控制调度】
++ 调度：抢占式的如何进行抢占/协作式如何主动出让 。（无栈协程通常是协作式，主动出让。有栈协程可抢占）
 
 ### 阻塞的操作指的是什么？
 慢速系统调用(阻塞的io/pause)，sleep等(比如go中从channel中读写值) 
 #### 关于几种IO
-io：阻塞/非阻塞 < == >多路IO  
+io：阻塞/非阻塞 < == >多路IO（select/poll/epoll）  
 (read/write/send/recv和fcntl)
 
 ### 为了实现调度而抽象出来的一些东西
 future：表示一个(异步)的操作【对外部来说是可让出CPU】 
+channel： 保存异步操作产物的队列（同步）
 
-channel： 保存异步操作产物的队列
+### 数据竞态的解决
 
-### 任务组合与同步
-future组合/promise.All和then/channel
++ 共享内存：加锁控制共享
++ 基于消息（csp/actor）：转移所有权（值类型copy，引用类型copy指针）go中向channel中写入后应不再修改引用指向的数据。rust中，离开代码块时失去所有权，不可修改。
+    + csp：通过channel发送消息
+    + actor：直接发送消息
+```go
+func main(){
+    // 累加10000次
+    // 直接加
+	// waitGroup := sync.WaitGroup{}
+	// waitGroup.Add(10000)
+	x := 0
+	for i := 0; i < 10000; i++ {
+		go func() {
+			x = x + 1
+			// waitGroup.Done()
+		}()
+	}
+	// waitGroup.Wait()
+	fmt.Println(x) // 不保证为10000
 
-不同语言的语法糖  
-    rs：async/await/
-    go：语法糖 
-    js：async/await/promise
+    // 通过channel
+    // waitGroup := sync.WaitGroup{}
+	// waitGroup.Add(10000)
+	x := 0
+	ch := make(chan int, 1)
+	ch <- x
+	for i := 0; i < 10000; i++ {
+		go func() {
+			tmp_x := <-ch
+			tmp_x = tmp_x + 1
+			ch <- tmp_x
+			// waitGroup.Done()
+		}()
+	}
+	// waitGroup.Wait()
+	fmt.Println(<-ch) // 10000
+}
+```
+```rust
+fn foo(s:String){}
+fn main(){
+    let str:String = String::from("hello");
+    foo(str);
+    println!(str); // 报错
+}
+```
+语言的runtime（调度器/执行器）做了哪些工作？
+    
+rust的exector：
+
+js的事件循环
+    同步的直接执行
+    异步的形成任务队列
+go的调度器
+    GMP模型
+    基于信号的抢占式调度
+    m:n
 
 
-语言的runtime（调度器/执行器）做了哪些工作
-    rust的exector
-    go的调度器
-    js的事件循环  
-
-数据竞态的解决
-    加锁控制共享和转移所有权
 
 go的sysycall：https://github.com/cch123/golang-notes/blob/master/syscall.md
 ==>
@@ -43,6 +101,9 @@ go的sysycall：https://github.com/cch123/golang-notes/blob/master/syscall.md
 进入非阻塞的不可被抢占
 进入阻塞的系统调用主动让出
 
+
+go channel：
+  将阻塞的go routine放在等待队列，当有其它读写的go routine时挑一个唤醒
 # Rust
 runtime将工作分为两部分：
 executor: 执行非阻塞的任务。：tokio、smol、async-std
@@ -68,6 +129,15 @@ https://nnp35.com/upload_json_live/20210813/videolist_20210813_00_2_-_-_100_4.js
 job.cancelAndJoin() - 等待协程执行完毕然后再取消  ？ 执行完毕为何还需要取消呢
 再看看kt
 
+
+
+不同语言的语法糖  
+    rs：async/await/future组合
+    go：go/channel 
+    js：async/await/promise
+### 任务生成、组合与同步
+future组合/promise.All和then/channel
+
 # 思考
 为Java实现一套更好用的异步（协程）需要啥？从底层控制这些阻塞调用（即让应用层的这些syscall都通过执行器控制以便出让CPU合理调度），做不到
 如果仅依靠线程级别的调度==>性能一般，无意义
@@ -83,6 +153,7 @@ actix开源作者因unsafe xx 退出开源
     改变CPU的使用权（抢占/协作式）
 
 
-补充阅读：
-阻塞/非阻塞IO与多路复用：https://www.zhihu.com/question/23614342
-go的sysycall：https://github.com/cch123/golang-notes/blob/master/syscall.md
+补充参考：  
+阻塞/非阻塞IO与多路复用：https://www.zhihu.com/question/23614342   
+go的sysycall：https://github.com/cch123/golang-notes/blob/master/syscall.md  
+go设计与实现：https://draveness.me/golang/
