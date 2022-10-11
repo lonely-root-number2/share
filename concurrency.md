@@ -76,17 +76,26 @@ fn main(){
     println!(str); // 报错
 }
 ```
-语言的runtime（调度器/执行器）做了哪些工作？
+### 语言的runtime（调度器/执行器）做了哪些工作？
     
-rust的exector：
+#### rust 
+runtime将工作分为两部分：  
+executor: 执行非阻塞的任务。  
+reactor（多路io的封装）：找出非阻塞的任务交给executor。
 
-js的事件循环
-    同步的直接执行
-    异步的形成任务队列
-go的调度器
-    GMP模型
-    基于信号的抢占式调度
-    m:n
+Future：描述任务状态。用户的程序要表达异步逻辑所构造的对象。要么是通过基础的 Future经过各种组合子构造，要么通过 async/await构造
+
+async:将一个普通函数转换为一个future。【kotlin中称作一个"标明可放弃控制权"的标记】：实质上是改变原来的无法放弃控制权的情况【即一旦阻塞必须等待执行结束
+
+waker注册到能监视任务状态的的Reactor中如epoll，timer【Waker是由Executor提供】
+executor传递waker到future
+#### js的事件循环
+同步的直接执行
+异步的形成任务队列
+#### go的调度器
+GMP模型  
+![gmp模型](https://www.liwenzhou.com/images/Go/concurrence/gpm.png)
+基于信号的抢占式调度
 
 
 
@@ -104,26 +113,10 @@ go的sysycall：https://github.com/cch123/golang-notes/blob/master/syscall.md
 
 go channel：
   将阻塞的go routine放在等待队列，当有其它读写的go routine时挑一个唤醒
-# Rust
-runtime将工作分为两部分：
-executor: 执行非阻塞的任务。：tokio、smol、async-std
-reactor：找出非阻塞的任务交给executor。
-
-Future：用户的程序要表达异步逻辑所构造的对象。要么是通过基础的 Future经过各种组合子构造，要么通过 async/await构造
-
-async:将一个普通函数转换为一个future。【kotlin中称作一个"标明可放弃控制权"的标记】：实质上是改变原来的无法放弃控制权的情况【即一旦阻塞必须等待执行结束
-
-waker注册到能监视任务状态的的Reactor中如epoll，timer【Waker是由Executor提供
-
-executor传递waker到future
 
 
-https://zhuanlan.zhihu.com/p/66028983
-https://zhuanlan.zhihu.com/p/112237024
 
-https://mmn36.com/tags?page=2
 
-https://nnp35.com/upload_json_live/20210813/videolist_20210813_00_2_-_-_100_4.json
 
 # kt
 job.cancelAndJoin() - 等待协程执行完毕然后再取消  ？ 执行完毕为何还需要取消呢
@@ -146,9 +139,6 @@ future组合/promise.All和then/channel
 括号位置的异教徒笑话与unsafexx
 actix开源作者因unsafe xx 退出开源
 
-
-
-
 调度的本质：
     改变CPU的使用权（抢占/协作式）
 
@@ -156,4 +146,9 @@ actix开源作者因unsafe xx 退出开源
 补充参考：  
 阻塞/非阻塞IO与多路复用：https://www.zhihu.com/question/23614342   
 go的sysycall：https://github.com/cch123/golang-notes/blob/master/syscall.md  
-go设计与实现：https://draveness.me/golang/
+go设计与实现：https://draveness.me/golang/  
+rust异步相关：  
+https://zhuanlan.zhihu.com/p/66028983
+https://zhuanlan.zhihu.com/p/112237024  
+喵老师的rust系列文章：  
+https://www.zhihu.com/column/rust-quickstart
