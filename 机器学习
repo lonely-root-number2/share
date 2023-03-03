@@ -16,17 +16,21 @@ mnist和鸢尾花-实现
 
 视觉方面
   CNN/池化/归一化等。 (纹理和背景)
-人脸识别
 
+人脸识别
+  特征提取-->映射
 
 语音方面LSTM
 
 NLP
-
+词向量法
+预训练
 
 
 现有问题：
 可解释性等
+
+chatGPT
 
 参考：
 https://baijiahao.baidu.com/s?id=1648513303243551939&wfr=spider&for=pc
